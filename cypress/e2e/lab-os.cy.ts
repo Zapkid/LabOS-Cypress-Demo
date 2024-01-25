@@ -1,9 +1,7 @@
 import { Page } from "../enums/pages";
-import { autoComplete } from "../pages/auto-complete-comp";
 import { dashboard } from "../pages/dashboard-comp";
 import { loginPage } from "../pages/login-page";
 import { orderPage } from "../pages/order-page";
-import { toast } from "../pages/toast-comp";
 import { tooltip } from "../pages/tooltip-comp";
 import { demoPassword, demoUsername } from "../support/env";
 import {
@@ -12,90 +10,116 @@ import {
   interceptRoutes,
   routes,
 } from "../support/routes";
-import { verifyElementFocus, verifyInputValue } from "../verifications/assert";
 import {
-  OrderResponse,
-  OrderTestData,
-  PhysicianResponse,
-} from "../types/order-types";
+  verifyElementFocus,
+  verifyInputValue,
+} from "../verifications/ui-verifications";
+import { OrderTestData } from "../types/order-types";
+import { orderWorkflows } from "../workflows/order-workflows";
+import { errorPopup } from "../pages/error-popup-comp";
 
 const testDataFilePath = "order-test-data.json";
 
 describe("LabOS tests", () => {
-  const orderTestData = "orderTestData";
-
-  before("Login", () => {
-    interceptRoutes(RouteAlias.postAuth);
-
-    cy.visit("/");
-    loginPage.login(demoUsername, demoPassword);
-    interceptRequest(routes.postAuth.alias);
-    cy.url().should("include", "/dashboard");
-  });
+  const orderTestDataAlias = "orderTestData";
 
   beforeEach(() => {
     interceptRoutes(
+      RouteAlias.postAuth,
       RouteAlias.getTestPage,
       RouteAlias.getPhysician,
       RouteAlias.getOrder,
       RouteAlias.postOrder,
       RouteAlias.getPatient,
-      RouteAlias.getTest
+      RouteAlias.getTest,
+      RouteAlias.postDynamicParameters,
+      RouteAlias.getDisplaySetting
     );
 
-    cy.fixture(testDataFilePath).then((testData: OrderTestData) => {
-      cy.wrap(testData).as(orderTestData);
-    });
-  });
+    cy.visit("/");
+    loginPage.login(demoUsername, demoPassword);
+    interceptRequest(routes.postAuth.alias);
+    cy.url().should("include", "/dashboard");
 
-  it("Should add blood test & save order successfully", function () {
+    cy.fixture(testDataFilePath).then((testData: OrderTestData) => {
+      cy.wrap(testData).as(orderTestDataAlias);
+    });
+
+    // Search & Go to Order page
     dashboard.goToPage(Page.order);
     interceptRequest(routes.getTestPage.alias);
 
     // Verify page initial state
-    verifyInputsEmpty();
-    verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));
+    orderWorkflows.verifyInputsEmpty();
     orderPage.getSaveButton().should("be.enabled");
 
+    // Verify focus on Facility input
+    verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPhysicianInput),
+      false
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPatientInput),
+      false
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getMedicalTestInput),
+      false
+    );
+  });
+
+  it("Should fill order form & save order successfully", function () {
     const { facility, physician, patient, medicalTest } = this[
-      orderTestData
+      orderTestDataAlias
     ] as OrderTestData;
     const expectedPhysicianText = `${physician.name} (${physician.code.value})`;
 
     // Add Facility
-    orderPage.getFacilityInput().type(facility);
-    autoComplete.getAutoCompleteListBox().should("be.visible");
-    autoComplete.clickAutoCompleteOption(facility);
+    orderWorkflows.addFacility(facility);
 
     // Verify expected Physician added
-    interceptRequest(routes.getPhysician.alias).then(
-      (interception: {
-        response?: {
-          body: PhysicianResponse;
-        };
-      }) => {
-        verifyPhysicianResponse(interception, physician);
-      }
-    );
-    verifyInputValue(orderPage.getPhysicianInput, expectedPhysicianText);
+    orderWorkflows.verifyPhysicianResponse(physician);
 
     // Verify Physician on hover tooltip text
+    verifyInputValue(orderPage.getPhysicianInput, expectedPhysicianText);
     orderPage.getPhysicianInput().realHover();
     tooltip.verifyText(expectedPhysicianText);
 
-    // Verify focus moved to Patient
+    // Verify focus moved to Patient input
     verifyElementFocus(orderPage.getInputFormField(orderPage.getPatientInput));
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getFacilityInput),
+      false
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPhysicianInput),
+      false
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getMedicalTestInput),
+      false
+    );
 
     // Add Patient
-    orderPage.typePatient(patient);
-    autoComplete.getAutoCompleteListBox().should("be.visible");
-    autoComplete.clickAutoCompleteOption(patient);
-    interceptRequest(routes.getPatient.alias);
-    interceptRequest(routes.getPhysician.alias);
-    interceptRequest(routes.getOrder.alias);
+    orderWorkflows.addPatient(patient);
 
-    // Verify focus moved to Add test
-    verifyElementFocus(orderPage.getInputFormField(orderPage.getMedicalTestInput));
+    // Verify focus moved to Add medical test input
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getMedicalTestInput)
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getFacilityInput),
+      false
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPhysicianInput),
+      false
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPatientInput),
+      false
+    );
 
     // Verify star on hover tooltip text
     orderPage.getMedicalTestStar(medicalTest.name).realHover();
@@ -112,52 +136,159 @@ describe("LabOS tests", () => {
     orderPage.saveOrder();
 
     // Verify toaster order name matches backend response
-    interceptRequest(routes.postOrder.alias).then(
-      (interception: {
-        response?: {
-          body: OrderResponse;
-        };
-      }) => {
-        const orderName = interception.response.body.order[0].orderName;
-        toast
-          .getTitle()
-          .should("have.text", ` Order ${orderName} saved successfully `);
-      }
+    orderWorkflows.verifyOrderNameResponse();
+
+    // Verify Order page input fields are empty
+    orderWorkflows.verifyInputsEmpty();
+
+    // Verify focus moved to Facility
+    verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPhysicianInput),
+      false
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPatientInput),
+      false
+    );
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getMedicalTestInput),
+      false
+    );
+  });
+
+  it("Should partially fill order form, missing selected medical test", function () {
+    const { facility, physician, patient } = this[
+      orderTestDataAlias
+    ] as OrderTestData;
+
+    // Add Facility
+    orderWorkflows.addFacility(facility);
+
+    // Verify expected Physician added
+    orderWorkflows.verifyPhysicianResponse(physician);
+
+    // Add Patient
+    orderWorkflows.addPatient(patient);
+
+    // Verify focus moved to Medical Test input
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getMedicalTestInput)
     );
 
-    // Verify Order page has reset - input fields empty & focus on Facility input
-    verifyInputsEmpty();
+    // Click outside of Medical test input
+    orderPage.getFacilityInput().click();
+
+    // Verify focus removed from Medical Test input
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getMedicalTestInput),
+      false
+    );
+
+    // Save order
+    orderPage.saveOrder();
+
+    // Verify focus moved to Medical Test input
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getMedicalTestInput)
+    );
+  });
+
+  it("Should partially fill order form, missing patient", function () {
+    const { facility, physician, medicalTest } = this[
+      orderTestDataAlias
+    ] as OrderTestData;
+
+    // Add Facility
+    orderWorkflows.addFacility(facility);
+
+    // Verify expected Physician added
+    orderWorkflows.verifyPhysicianResponse(physician);
+
+    // Select test
+    orderPage.selectTest(medicalTest.name);
+    interceptRequest(routes.getTest.alias);
+
+    // Click outside of Patient input
+    orderPage.getFacilityInput().click();
+
+    // Verify no focus on Patient input
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPatientInput),
+      false
+    );
+
+    // Save order
+    orderPage.saveOrder();
+
+    // Verify focus moved to Medical Test input
+    verifyElementFocus(orderPage.getInputFormField(orderPage.getPatientInput));
+  });
+
+  it("Should partially fill order form, missing physician", function () {
+    const { facility, physician, patient, medicalTest } = this[
+      orderTestDataAlias
+    ] as OrderTestData;
+
+    // Add Facility
+    orderWorkflows.addFacility(facility);
+
+    // Verify expected Physician added
+    orderWorkflows.verifyPhysicianResponse(physician);
+
+    // Add Patient
+    orderWorkflows.addPatient(patient);
+
+    // Select test
+    orderPage.selectTest(medicalTest.name);
+    interceptRequest(routes.getTest.alias);
+
+    // Clear Physician
+    orderPage.getPhysicianInput().clear();
+    interceptRequest(routes.getPhysician.alias);
+
+    // Click outside of Physician input
+    orderPage.getFacilityInput().click();
+
+    // Verify no focus on Physician input
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getPhysicianInput),
+      false
+    );
+
+    // Save order
+    orderPage.saveOrder();
+
+    // Verify error popup on missing Physician input
+    errorPopup.getPopup().should("be.visible");
+    errorPopup.getDetails().should("have.text", "Unknown Physician");
+  });
+
+  it("Should partially fill order form, missing facility & patient", function () {
+    const { facility, physician, patient, medicalTest } = this[
+      orderTestDataAlias
+    ] as OrderTestData;
+
+    // Add Physician
+    orderWorkflows.addPhysician(physician.name.replace("Dr. ", ""));
+
+    // Verify expected Physician added
+    orderWorkflows.verifyPhysicianResponse(physician);
+
+    // Select test
+    orderPage.selectTest(medicalTest.name);
+    interceptRequest(routes.getTest.alias);
+
+    // Verify no focus on Facility input
+    verifyElementFocus(
+      orderPage.getInputFormField(orderPage.getFacilityInput),
+      false
+    );
+
+    // Save order
+    orderPage.saveOrder();
+
+    // Verify focus moved to Facility input
     verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));
   });
 });
-
-function verifyInputsEmpty() {
-  verifyInputValue(orderPage.getFacilityInput, "");
-  verifyInputValue(orderPage.getPhysicianInput, "");
-  verifyInputValue(orderPage.getPatientInput, "");
-}
-
-function verifyPhysicianResponse(
-  interception: {
-    response?: {
-      body: PhysicianResponse;
-    };
-  },
-  physician: { name: string; code: { name: string; value: string } }
-) {
-  const physicianDetails = interception.response.body.physician[0];
-  expect(physicianDetails.name).to.equal(physician.name);
-
-  // Verify physician code value by code name in additional codes
-  let verifiedPhysicianCode: boolean = false;
-  for (const additionalCode of physicianDetails.additionalCodes) {
-    if (additionalCode.name === physician.code.name) {
-      expect(additionalCode.value).to.equal(physician.code.value);
-      verifiedPhysicianCode = true;
-    }
-  }
-  expect(
-    verifiedPhysicianCode,
-    "Verified physician code matches backend response"
-  ).to.equal(true);
-}

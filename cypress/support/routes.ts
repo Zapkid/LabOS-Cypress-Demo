@@ -23,6 +23,8 @@ export enum RouteAlias {
   postOrder = "postOrder",
   getPatient = "getPatient",
   getTest = "getTest",
+  postDynamicParameters = "postDynamicParameters",
+  getDisplaySetting = "getDisplaySetting",
 }
 
 export const routes = {
@@ -60,5 +62,15 @@ export const routes = {
     url: "/api/lab/test/*",
     method: "GET",
     alias: RouteAlias.getTest,
+  },
+  postDynamicParameters: {
+    url: "/api/lab/order/action/dynamic-parameters",
+    method: "POST",
+    alias: RouteAlias.postDynamicParameters,
+  },
+  getDisplaySetting: {
+    url: "/api/lab/display-setting*",
+    method: "GET",
+    alias: RouteAlias.getDisplaySetting,
   },
 };
