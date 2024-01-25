@@ -1,118 +1,163 @@
+import { Page } from "../enums/pages";
+import { autoComplete } from "../pages/auto-complete-comp";
+import { dashboard } from "../pages/dashboard-comp";
 import { loginPage } from "../pages/login-page";
+import { orderPage } from "../pages/order-page";
+import { toast } from "../pages/toast-comp";
+import { tooltip } from "../pages/tooltip-comp";
 import { demoPassword, demoUsername } from "../support/env";
+import {
+  RouteAlias,
+  interceptRequest,
+  interceptRoutes,
+  routes,
+} from "../support/routes";
+import { verifyElementFocus, verifyInputValue } from "../verifications/assert";
+import {
+  OrderResponse,
+  OrderTestData,
+  PhysicianResponse,
+} from "../types/order-types";
 
-const facility = "QA Facility";
-const expectedPhysician = "Dr. Hunter Atkinson (A98185)";
-const expectedPhysicianName = "Dr. Hunter Atkinson";
-const expectedPhysicianCodeName = "UPIN";
-const expectedPhysicianCodeValue = "A98185";
-const patient = "Qa Patient";
-const bloodTest = "Albumin";
-const expectedStarTooltipText = "SST";
-const expectedBloodTestText = "109 - ALB";
+const testDataFilePath = "order-test-data.json";
 
 describe("LabOS tests", () => {
+  const orderTestData = "orderTestData";
+
   before("Login", () => {
-    cy.intercept({ method: "POST", url: "/api/lab/authentication*" }).as(
-      "auth"
-    );
+    interceptRoutes(RouteAlias.postAuth);
 
     cy.visit("/");
-
-    loginPage.typeUsername(demoUsername);
-    loginPage.typePassword(demoPassword);
-    loginPage.clickLoginButton();
-
-    cy.wait("@auth");
-
+    loginPage.login(demoUsername, demoPassword);
+    interceptRequest(routes.postAuth.alias);
     cy.url().should("include", "/dashboard");
   });
 
   beforeEach(() => {
-    cy.intercept("/api/lab/test-page/*").as("test-page");
-    cy.intercept("/api/lab/physician*").as("physician");
-    cy.intercept({ method: "GET", url: "/api/lab/order*" }).as("order");
-    cy.intercept({ method: "POST", url: "/api/lab/order*" }).as("order-post");
-    cy.intercept("/api/lab/patient/*").as("patient");
-    cy.intercept("/api/lab/test/*").as("test-code");
+    interceptRoutes(
+      RouteAlias.getTestPage,
+      RouteAlias.getPhysician,
+      RouteAlias.getOrder,
+      RouteAlias.postOrder,
+      RouteAlias.getPatient,
+      RouteAlias.getTest
+    );
+
+    cy.fixture(testDataFilePath).then((testData: OrderTestData) => {
+      cy.wrap(testData).as(orderTestData);
+    });
   });
 
-  it("Should add blood test & save order successfully", () => {
-    cy.get('button[data-cy="st-button-menu"]').click();
-    cy.get("#menuSearchInput").type("Order");
-    cy.get('a[id*="order"]').click();
-    cy.wait("@test-page");
+  it("Should add blood test & save order successfully", function () {
+    dashboard.goToPage(Page.order);
+    interceptRequest(routes.getTestPage.alias);
 
-    cy.get('[data-cy="st-form-control-facility"] input').type(facility);
-    cy.get('[role="listbox"]').should("be.visible");
-    cy.get("mat-option").contains(facility).click();
-    cy.wait("@physician").then(
+    // Verify page initial state
+    verifyInputsEmpty();
+    verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));
+    orderPage.getSaveButton().should("be.enabled");
+
+    const { facility, physician, patient, medicalTest } = this[
+      orderTestData
+    ] as OrderTestData;
+    const expectedPhysicianText = `${physician.name} (${physician.code.value})`;
+
+    // Add Facility
+    orderPage.getFacilityInput().type(facility);
+    autoComplete.getAutoCompleteListBox().should("be.visible");
+    autoComplete.clickAutoCompleteOption(facility);
+
+    // Verify expected Physician added
+    interceptRequest(routes.getPhysician.alias).then(
       (interception: {
         response?: {
-          body: {
-            physician: {
-              name: string;
-              additionalCodes: { name: string; value: string }[];
-            }[];
-          };
+          body: PhysicianResponse;
         };
       }) => {
-        expect(interception.response.body.physician[0].name).to.equal(
-          expectedPhysicianName
-        );
-        expect(
-          interception.response.body.physician[0].additionalCodes[0].name
-        ).to.equal(expectedPhysicianCodeName);
-        expect(
-          interception.response.body.physician[0].additionalCodes[0].value
-        ).to.equal(expectedPhysicianCodeValue);
+        verifyPhysicianResponse(interception, physician);
+      }
+    );
+    verifyInputValue(orderPage.getPhysicianInput, expectedPhysicianText);
+
+    // Verify Physician on hover tooltip text
+    orderPage.getPhysicianInput().realHover();
+    tooltip.verifyText(expectedPhysicianText);
+
+    // Verify focus moved to Patient
+    verifyElementFocus(orderPage.getInputFormField(orderPage.getPatientInput));
+
+    // Add Patient
+    orderPage.typePatient(patient);
+    autoComplete.getAutoCompleteListBox().should("be.visible");
+    autoComplete.clickAutoCompleteOption(patient);
+    interceptRequest(routes.getPatient.alias);
+    interceptRequest(routes.getPhysician.alias);
+    interceptRequest(routes.getOrder.alias);
+
+    // Verify focus moved to Add test
+    verifyElementFocus(orderPage.getInputFormField(orderPage.getMedicalTestInput));
+
+    // Verify star on hover tooltip text
+    orderPage.getMedicalTestStar(medicalTest.name).realHover();
+    tooltip.verifyText(medicalTest.starTooltip);
+
+    // Select test
+    orderPage.selectTest(medicalTest.name);
+    interceptRequest(routes.getTest.alias);
+
+    // Verify selected test
+    orderPage.getSelectedTest(` ${medicalTest.selectedText} `);
+
+    // Save order
+    orderPage.saveOrder();
+
+    // Verify toaster order name matches backend response
+    interceptRequest(routes.postOrder.alias).then(
+      (interception: {
+        response?: {
+          body: OrderResponse;
+        };
+      }) => {
+        const orderName = interception.response.body.order[0].orderName;
+        toast
+          .getTitle()
+          .should("have.text", ` Order ${orderName} saved successfully `);
       }
     );
 
-    cy.get('[data-cy="st-form-control-physician"] input').invoke('val').should('equal', expectedPhysician);
-    cy.get('[data-cy="st-form-control-physician"] input').realHover();
-    cy.get("#st-tooltip").should("have.text", expectedPhysician);
-
-    cy.get('[data-cy="st-form-control-patient"] input').type(patient);
-    cy.get('[role="listbox"]').should("be.visible");
-    cy.get("mat-option").contains(patient).click();
-    cy.wait("@patient");
-    cy.wait("@physician");
-    cy.wait("@order");
-
-    cy.get('[data-cy="st-button-save"]').should("be.enabled");
-
-    cy.get("mat-checkbox")
-      .contains(bloodTest)
-      .parent("mat-checkbox")
-      .find(".mat-icon")
-      .realHover();
-    cy.get("#st-tooltip").should("have.text", expectedStarTooltipText);
-
-    cy.get("mat-checkbox").contains(bloodTest).click();
-    cy.wait("@test-code");
-
-    cy.get(".st-test-text").should("have.text", ` ${expectedBloodTestText} `);
-
-    cy.get('[data-cy="st-button-save"]').click();
-
-    cy.wait("@order-post").then(
-      (interception: {
-        response?: {
-          body: {
-            order: {
-              orderName: string;
-            }[];
-          };
-        };
-      }) => {
-        const orderName = JSON.stringify(interception.response.body.order[0].orderName).replaceAll('"','');
-        cy.get('st-order-saved-toast div').first().should('have.text', ` Order ${orderName} saved successfully `);
-       
-        cy.get('[data-cy="st-form-control-facility"] input').invoke('val').should('equal', '');
-        cy.get('[data-cy="st-form-control-physician"] input').invoke('val').should('equal', '');
-        cy.get('[data-cy="st-form-control-patient"] input').invoke('val').should('equal', '');
-      }
-    );
+    // Verify Order page has reset - input fields empty & focus on Facility input
+    verifyInputsEmpty();
+    verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));
   });
 });
+
+function verifyInputsEmpty() {
+  verifyInputValue(orderPage.getFacilityInput, "");
+  verifyInputValue(orderPage.getPhysicianInput, "");
+  verifyInputValue(orderPage.getPatientInput, "");
+}
+
+function verifyPhysicianResponse(
+  interception: {
+    response?: {
+      body: PhysicianResponse;
+    };
+  },
+  physician: { name: string; code: { name: string; value: string } }
+) {
+  const physicianDetails = interception.response.body.physician[0];
+  expect(physicianDetails.name).to.equal(physician.name);
+
+  // Verify physician code value by code name in additional codes
+  let verifiedPhysicianCode: boolean = false;
+  for (const additionalCode of physicianDetails.additionalCodes) {
+    if (additionalCode.name === physician.code.name) {
+      expect(additionalCode.value).to.equal(physician.code.value);
+      verifiedPhysicianCode = true;
+    }
+  }
+  expect(
+    verifiedPhysicianCode,
+    "Verified physician code matches backend response"
+  ).to.equal(true);
+}

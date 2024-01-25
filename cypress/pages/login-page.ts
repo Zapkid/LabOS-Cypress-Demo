@@ -1,26 +1,35 @@
+import { uiActions } from "../actions/ui-actions";
+import { LoginPageDataCy } from "../lab-os-dom/login-page-dom";
+
 class LoginPage {
-  getUsernameInput(): Cypress.Chainable<JQuery<HTMLLIElement>> {
-    return cy.get('input[data-cy="st-form-control-username"]');
+  getUsernameInput(): Cypress.Chainable<JQuery<HTMLElement>> {
+    return uiActions.getElementByDataCy(LoginPageDataCy.usernameInput);
   }
 
-  getPasswordInput(): Cypress.Chainable<JQuery<HTMLLIElement>> {
-    return cy.get('input[data-cy="st-form-control-password"]');
+  getPasswordInput(): Cypress.Chainable<JQuery<HTMLElement>> {
+    return uiActions.getElementByDataCy(LoginPageDataCy.passwordInput);
   }
 
-  getLoginButton(): Cypress.Chainable<JQuery<HTMLLIElement>> {
-    return cy.get('button[data-cy="st-button-login-enter"]');
+  getLoginButton(): Cypress.Chainable<JQuery<HTMLElement>> {
+    return uiActions.getElementByDataCy(LoginPageDataCy.loginButton);
   }
 
   typeUsername(username: string): void {
-    this.getUsernameInput().type(username);
+    uiActions.typeText(this.getUsernameInput(), username);
   }
 
   typePassword(password: string): void {
-    this.getPasswordInput().type(password);
+    uiActions.typeText(this.getPasswordInput(), password);
   }
 
   clickLoginButton(): void {
-    this.getLoginButton().click();
+    uiActions.clickElement(this.getLoginButton());
+  }
+
+  login(username: string, password: string): void {
+    this.typeUsername(username);
+    this.typePassword(password);
+    this.clickLoginButton();
   }
 }
 
