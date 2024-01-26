@@ -21,4 +21,4 @@ The project is structured with the page object model design, along with tools, a
 5. Choose tests file to run.
 
 
-![Run results](cypress/assets/Run%20results.png "Run results")
+![Run results](cypress/assets/Run%20Results.png "Run results")
