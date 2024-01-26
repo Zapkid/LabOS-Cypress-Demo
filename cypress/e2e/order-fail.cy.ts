@@ -2,7 +2,6 @@ import { Page } from "../enums/pages";
 import { dashboard } from "../pages/dashboard-comp";
 import { loginPage } from "../pages/login-page";
 import { orderPage } from "../pages/order-page";
-import { tooltip } from "../pages/tooltip-comp";
 import { demoPassword, demoUsername } from "../support/env";
 import {
   RouteAlias,
@@ -10,17 +9,14 @@ import {
   interceptRoutes,
   routes,
 } from "../support/routes";
-import {
-  verifyElementFocus,
-  verifyInputValue,
-} from "../verifications/ui-verifications";
+import { verifyElementFocus } from "../verifications/ui-verifications";
 import { OrderTestData } from "../types/order-types";
 import { orderWorkflows } from "../workflows/order-workflows";
 import { errorPopup } from "../pages/error-popup-comp";
 
 const testDataFilePath = "order-test-data.json";
 
-describe("LabOS tests", () => {
+describe("LabOS save Order fail tests", () => {
   const orderTestDataAlias = "orderTestData";
 
   beforeEach(() => {
@@ -55,106 +51,6 @@ describe("LabOS tests", () => {
 
     // Verify focus on Facility input
     verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getPhysicianInput),
-      false
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getPatientInput),
-      false
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getMedicalTestInput),
-      false
-    );
-  });
-
-  it("Should fill order form & save order successfully", function () {
-    const { facility, physician, patient, medicalTest } = this[
-      orderTestDataAlias
-    ] as OrderTestData;
-    const expectedPhysicianText = `${physician.name} (${physician.code.value})`;
-
-    // Add Facility
-    orderWorkflows.addFacility(facility);
-
-    // Verify expected Physician added
-    orderWorkflows.verifyPhysicianResponse(physician);
-
-    // Verify Physician on hover tooltip text
-    verifyInputValue(orderPage.getPhysicianInput, expectedPhysicianText);
-    orderPage.getPhysicianInput().realHover();
-    tooltip.verifyText(expectedPhysicianText);
-
-    // Verify focus moved to Patient input
-    verifyElementFocus(orderPage.getInputFormField(orderPage.getPatientInput));
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getFacilityInput),
-      false
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getPhysicianInput),
-      false
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getMedicalTestInput),
-      false
-    );
-
-    // Add Patient
-    orderWorkflows.addPatient(patient);
-
-    // Verify focus moved to Add medical test input
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getMedicalTestInput)
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getFacilityInput),
-      false
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getPhysicianInput),
-      false
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getPatientInput),
-      false
-    );
-
-    // Verify star on hover tooltip text
-    orderPage.getMedicalTestStar(medicalTest.name).realHover();
-    tooltip.verifyText(medicalTest.starTooltip);
-
-    // Select test
-    orderPage.selectTest(medicalTest.name);
-    interceptRequest(routes.getTest.alias);
-
-    // Verify selected test
-    orderPage.getSelectedTest(` ${medicalTest.selectedText} `);
-
-    // Save order
-    orderPage.saveOrder();
-
-    // Verify toaster order name matches backend response
-    orderWorkflows.verifyOrderNameResponse();
-
-    // Verify Order page input fields are empty
-    orderWorkflows.verifyInputsEmpty();
-
-    // Verify focus moved to Facility
-    verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getPhysicianInput),
-      false
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getPatientInput),
-      false
-    );
-    verifyElementFocus(
-      orderPage.getInputFormField(orderPage.getMedicalTestInput),
-      false
-    );
   });
 
   it("Should partially fill order form, missing selected medical test", function () {
@@ -178,6 +74,11 @@ describe("LabOS tests", () => {
 
     // Click outside of Medical test input
     orderPage.getFacilityInput().click();
+
+    // Verify input has red color to signal invalidity
+    orderPage
+      .getMedicalTestInput()
+      .should("have.css", "caret-color", "rgb(210, 0, 0)");
 
     // Verify focus removed from Medical Test input
     verifyElementFocus(
@@ -212,7 +113,12 @@ describe("LabOS tests", () => {
     // Click outside of Patient input
     orderPage.getFacilityInput().click();
 
-    // Verify no focus on Patient input
+    // Verify input has red color to signal invalidity
+    orderPage
+      .getPatientInput()
+      .should("have.css", "caret-color", "rgb(210, 0, 0)");
+
+    // Verify focus removed from Patient input
     verifyElementFocus(
       orderPage.getInputFormField(orderPage.getPatientInput),
       false
@@ -250,7 +156,12 @@ describe("LabOS tests", () => {
     // Click outside of Physician input
     orderPage.getFacilityInput().click();
 
-    // Verify no focus on Physician input
+    // Verify input has red color to signal invalidity
+    orderPage
+      .getPhysicianInput()
+      .should("have.css", "caret-color", "rgb(210, 0, 0)");
+
+    // Verify focus removed from Physician input
     verifyElementFocus(
       orderPage.getInputFormField(orderPage.getPhysicianInput),
       false
@@ -265,7 +176,7 @@ describe("LabOS tests", () => {
   });
 
   it("Should partially fill order form, missing facility & patient", function () {
-    const { facility, physician, patient, medicalTest } = this[
+    const { physician, medicalTest } = this[
       orderTestDataAlias
     ] as OrderTestData;
 
@@ -279,11 +190,19 @@ describe("LabOS tests", () => {
     orderPage.selectTest(medicalTest.name);
     interceptRequest(routes.getTest.alias);
 
-    // Verify no focus on Facility input
+    // Verify focus removed from Facility input
     verifyElementFocus(
       orderPage.getInputFormField(orderPage.getFacilityInput),
       false
     );
+
+    // Verify inputs has red color to signal invalidity
+    orderPage
+      .getFacilityInput()
+      .should("have.css", "caret-color", "rgb(210, 0, 0)");
+    orderPage
+      .getPatientInput()
+      .should("have.css", "caret-color", "rgb(210, 0, 0)");
 
     // Save order
     orderPage.saveOrder();

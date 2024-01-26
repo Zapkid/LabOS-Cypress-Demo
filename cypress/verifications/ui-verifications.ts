@@ -11,3 +11,11 @@ export const verifyElementFocus = (
 ) => {
   element.should(`${hasFocus ? "" : "not."}have.class`, "mat-focused");
 };
+
+
+export const verifyElementText = (
+  element: Cypress.Chainable<JQuery<HTMLElement>>,
+  text: string
+) => {
+  element.should(`have.text`, text);
+};
