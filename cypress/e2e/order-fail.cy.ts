@@ -196,6 +196,9 @@ describe("LabOS save Order fail tests", () => {
       false
     );
 
+    // Save order
+    orderPage.saveOrder();
+
     // Verify inputs has red color to signal invalidity
     orderPage
       .getFacilityInput()
@@ -203,9 +206,6 @@ describe("LabOS save Order fail tests", () => {
     orderPage
       .getPatientInput()
       .should("have.css", "caret-color", "rgb(210, 0, 0)");
-
-    // Save order
-    orderPage.saveOrder();
 
     // Verify focus moved to Facility input
     verifyElementFocus(orderPage.getInputFormField(orderPage.getFacilityInput));

@@ -1,6 +1,7 @@
 # LabOS Cypress Automation testing demo
 
-This project contains Cypress tests for the [LabOS](https://qa-candidates.labos.cloud "LabOS") service, including UI & Backend tests.
+This project contains Cypress tests for the [LabOS](https://qa-candidates.labos.cloud "LabOS") service, focusing on client web UI with backend verifications. \
+The project is structured with the page object model design, along with tools, actions, assertions & workflows.
 
 ## Setup
 
@@ -9,14 +10,15 @@ This project contains Cypress tests for the [LabOS](https://qa-candidates.labos.
 
 ## Running tests with one click
 
-1. Run tests by running `run-tests` scripts in `package.json`.
+1. Run tests by running the `run-tests` script in `package.json`.
 
 ## Running tests with Cypress
 
 1. Run the `open-cypress` script in `package.json`.
-2. The Cypress app will open (will ask for network discoverability permissions).
-   ![Cypress Dashboard](cypress/assets/Cypress%20app.png "Cypress Dashboard")
-3. Choose 'E2E Testing'.
-   ![Cypress Browsers](cypress/assets/Cypress%20choose%20browser.png "Cypress Browsers")
-4. Choose Browser - special cypress browser will open.
+2. The Cypress app will open.
+3. Choose E2E Testing.
+4. Choose Browser.
 5. Choose tests file to run.
+
+
+![Run results](cypress/assets/Run%20results.png "Run results")
