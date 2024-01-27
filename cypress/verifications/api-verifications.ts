@@ -1,5 +1,5 @@
 import { Interception } from "cypress/types/net-stubbing";
-import { RouteAlias, interceptRequest } from "../support/routes";
+import { RouteAlias, interceptRequest } from "../lab-os/api/routes";
 
 export const verifyResponse = (
   routeAlias: RouteAlias,

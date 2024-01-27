@@ -1,15 +1,15 @@
 import { Interception } from "cypress/types/net-stubbing";
 import { autoComplete } from "../pages/auto-complete-comp";
 import { orderPage } from "../pages/order-page";
-import { interceptRequest, routes } from "../support/routes";
+import { interceptRequest, routes } from "../api/routes";
 import {
   OrderResponse,
   OrderTestData,
   PhysicianResponse,
 } from "../types/order-types";
-import { verifyResponse } from "../verifications/api-verifications";
+import { verifyResponse } from "../../verifications/api-verifications";
 import { toast } from "../pages/toast-comp";
-import { verifyInputValue } from "../verifications/ui-verifications";
+import { verifyInputValue } from "../../verifications/ui-verifications";
 
 class OrderWorkflows {
   verifyInputsEmpty(): void {

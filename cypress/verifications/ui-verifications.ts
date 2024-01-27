@@ -5,17 +5,25 @@ export const verifyInputValue = (
   getInput().invoke("val").should("equal", value);
 };
 
-export const verifyElementFocus = (
+export const verifyElement = (
   element: Cypress.Chainable<JQuery<HTMLElement>>,
-  hasFocus: boolean = true
+  assertion: string,
+  value?: unknown
 ) => {
-  element.should(`${hasFocus ? "" : "not."}have.class`, "mat-focused");
+  element.should(assertion, value);
 };
 
+export const verifyElementFocus = (
+  element: Cypress.Chainable<JQuery<HTMLElement>>,
+  focusClassName: string,
+  hasFocus: boolean = true
+) => {
+  verifyElement(element, `${hasFocus ? "" : "not."}have.class`, focusClassName);
+};
 
 export const verifyElementText = (
   element: Cypress.Chainable<JQuery<HTMLElement>>,
   text: string
 ) => {
-  element.should(`have.text`, text);
+  verifyElement(element, "have.text", text);
 };

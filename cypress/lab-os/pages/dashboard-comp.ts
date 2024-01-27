@@ -1,6 +1,6 @@
-import { uiActions } from "../actions/ui-actions";
+import { uiActions } from "../../actions/ui-actions";
 import { Page } from "../enums/pages";
-import { DashboardDataCy, DashboardDom } from "../lab-os-dom/dashboard-comp-dom";
+import { DashboardDataCy, DashboardDom } from "../dom/dashboard-comp-dom";
 
 class Dashboard {
   getMenuButton(): Cypress.Chainable<JQuery<HTMLElement>> {

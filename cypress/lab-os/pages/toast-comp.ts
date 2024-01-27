@@ -1,5 +1,5 @@
-import { uiActions } from "../actions/ui-actions";
-import { ToastDom } from "../lab-os-dom/toast-comp-dom";
+import { uiActions } from "../../actions/ui-actions";
+import { ToastDom } from "../dom/toast-comp-dom";
 
 class Toast {
   getContent(): Cypress.Chainable<JQuery<HTMLElement>> {
