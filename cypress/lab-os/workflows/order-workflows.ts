@@ -3,6 +3,7 @@ import { autoComplete } from "../pages/auto-complete-comp";
 import { orderPage } from "../pages/order-page";
 import { interceptRequest, routes } from "../api/routes";
 import {
+  AdditionalCodes,
   OrderResponse,
   OrderTestData,
   PhysicianResponse,
@@ -43,36 +44,45 @@ class OrderWorkflows {
   verifyPhysicianResponse = (physician: OrderTestData["physician"]): void => {
     verifyResponse(routes.getPhysician.alias, (interception: Interception) => {
       let foundPhysician: boolean = false;
-      for (const physicianDetails of interception.response.body
-        .physician as PhysicianResponse["physician"]) {
+      const physicianResponse = interception.response.body
+        .physician as PhysicianResponse["physician"];
+
+      // Verify physician found by physician name
+      for (const physicianDetails of physicianResponse) {
         if (physicianDetails.name === physician.name) {
           foundPhysician = true;
-          const physicianDetails: PhysicianResponse["physician"][0] =
-            interception.response.body.physician[0];
           expect(physicianDetails.name).to.equal(physician.name);
 
-          // Verify physician code value by code name in additional codes
-          let foundPhysicianCode: boolean = false;
-          let verifiedPhysicianCode: boolean = false;
-          for (const additionalCode of physicianDetails.additionalCodes) {
-            if (additionalCode.name === physician.code.name) {
-              foundPhysicianCode = true;
-              expect(additionalCode.value).to.equal(physician.code.value);
-              verifiedPhysicianCode = true;
-            }
-          }
-          if (!foundPhysicianCode || !verifiedPhysicianCode) {
-            throw new Error(
-              `Physician code found: ${foundPhysicianCode}, verified: ${verifiedPhysicianCode}, in additional codes for ${physician.name}`
-            );
-          }
+          // Verify physician code value by code name in physician additional codes response
+          this.verifyPhysicianCode(physician, physicianDetails.additionalCodes);
         }
-        if (!foundPhysician) {
-          throw new Error(`Physician not found: ${physician.name}`);
-        }
+      }
+
+      if (!foundPhysician) {
+        throw new Error(`Physician not found: ${physician.name}`);
       }
     });
   };
+
+  verifyPhysicianCode(
+    physician: OrderTestData["physician"],
+    additionalCodes: AdditionalCodes[]
+  ) {
+    let foundPhysicianCode: boolean = false;
+    let verifiedPhysicianCode: boolean = false;
+    for (const additionalCode of additionalCodes) {
+      if (additionalCode.name === physician.code.name) {
+        foundPhysicianCode = true;
+        expect(additionalCode.value).to.equal(physician.code.value);
+        verifiedPhysicianCode = true;
+      }
+    }
+    if (!foundPhysicianCode || !verifiedPhysicianCode) {
+      throw new Error(
+        `Physician code found: ${foundPhysicianCode}, verified: ${verifiedPhysicianCode}, in additional codes for ${physician.name}`
+      );
+    }
+  }
 
   verifyOrderNameResponse = (): void => {
     verifyResponse(routes.postOrder.alias, (interception: Interception) => {
