@@ -1,6 +1,6 @@
 # LabOS Cypress Automation testing demo
 
-This project contains Cypress tests for the [LabOS](https://qa-candidates.labos.cloud "LabOS") service, focusing on client web UI with backend verifications. \
+This project contains Cypress tests for the [LabOS](https://qa-candidates.labos.cloud "LabOS") app, focusing on client web UI with backend verifications. \
 The project is written with TypeScript and structured with the page-object-model design, along with tools, actions, assertions & workflows.
 
 ## Setup
