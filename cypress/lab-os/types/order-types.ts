@@ -1,11 +1,13 @@
 export type PhysicianResponse = {
   physician: {
     name: string;
-    additionalCodes: {
-      name: string;
-      value: string;
-    }[];
+    additionalCodes: AdditionalCodes[];
   }[];
+};
+
+export type AdditionalCodes = {
+  name: string;
+  value: string;
 };
 
 export type OrderResponse = {
