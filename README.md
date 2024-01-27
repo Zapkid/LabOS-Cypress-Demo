@@ -10,7 +10,7 @@ The project is written with TypeScript and structured with the page-object-model
 
 ## Running tests with one click
 
-1. Run tests by running the `run-tests` script in `package.json`.
+1. Run tests by running a `run-tests` script from `package.json`.
 
 ## Running tests with Cypress
 
