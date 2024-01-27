@@ -4,7 +4,10 @@
   "description": "Automated test cases for the LabOS website using Cypress automation and the page-object-model design pattern.",
   "main": "index.js",
   "scripts": {
-    "run-tests": "npx cypress run --browser chrome --spec 'cypress/e2e/*.cy.ts'",
+    "run-tests:all": "npx cypress run --browser chrome --spec 'cypress/e2e/LabOS/*.cy.ts'",
+    "run-tests:login": "npx cypress run --browser chrome --spec 'cypress/e2e/LabOS/login.cy.ts'",
+    "run-tests:order-success": "npx cypress run --browser chrome --spec 'cypress/e2e/LabOS/order-success.cy.ts'",
+    "run-tests:order-fail": "npx cypress run --browser chrome --spec 'cypress/e2e/LabOS/order-fail.cy.ts'",
     "open-cypress": "npx cypress open"
   },
   "repository": {

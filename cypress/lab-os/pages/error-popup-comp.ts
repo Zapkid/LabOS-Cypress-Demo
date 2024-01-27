@@ -1,4 +1,4 @@
-import { uiActions } from "../actions/ui-actions";
+import { uiActions } from "../../actions/ui-actions";
 
 class ErrorPopup {
   getPopup(): Cypress.Chainable<JQuery<HTMLElement>> {

@@ -1,5 +1,5 @@
-import { Modifier, uiActions } from "../actions/ui-actions";
-import { OrderPageDataCy, OrderPageDom } from "../lab-os-dom/order-page-dom";
+import { Modifier, uiActions } from "../../actions/ui-actions";
+import { OrderPageDataCy, OrderPageDom } from "../dom/order-page-dom";
 
 class OrderPage {
   getFacilityInput(): Cypress.Chainable<JQuery<HTMLElement>> {

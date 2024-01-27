@@ -1,5 +1,5 @@
-import { uiActions } from "../actions/ui-actions";
-import { TooltipDom } from "../lab-os-dom/tooltip-comp-dom";
+import { uiActions } from "../../actions/ui-actions";
+import { TooltipDom } from "../dom/tooltip-comp-dom";
 
 class Tooltip {
   verifyText(text: string): void {

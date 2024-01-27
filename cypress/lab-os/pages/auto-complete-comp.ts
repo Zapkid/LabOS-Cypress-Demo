@@ -1,5 +1,5 @@
-import { uiActions } from "../actions/ui-actions";
-import { AutoCompleteDom } from "../lab-os-dom/auto-complete-comp-dom";
+import { uiActions } from "../../actions/ui-actions";
+import { AutoCompleteDom } from "../dom/auto-complete-comp-dom";
 
 class AutoComplete {
   getAutoCompleteListBox(): Cypress.Chainable<JQuery<HTMLElement>> {
